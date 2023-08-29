@@ -5,9 +5,10 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <linux/ip.h>
 
-#define broadcast 192.168.0.127
-#define ADDR 192.168.0.2
+#define broadcast "192.168.0.255"
+#define ADDR "192.168.0.3"
 #define SPORT 7777
 #define DPORT 8888
 
@@ -15,10 +16,10 @@
 int
 main(int argc, char* argv[])
 {
-    char* msg = (char*)malloc(sizeof(struct udphdr) + 28);
-    char* ip = (char*)malloc(sizeof(struct iphdr) + sizeof(struct udphdr) + 28);
+    //char* msg = (char*)malloc(sizeof(struct udphdr) + 28);
+    //char* ip = (char*)malloc(sizeof(struct iphdr) + sizeof(struct udphdr) + 28);
 
-    ((struct iphdr*)ip)->version = 4;
+    /*((struct iphdr*)ip)->version = 4;
     ((struct iphdr*)ip)->ihl = 5;
     ((struct iphdr*)ip)->tos = 0;
     ((struct iphdr*)ip)->tot_len = 40;
@@ -28,38 +29,41 @@ main(int argc, char* argv[])
     ((struct iphdr*)ip)->protocol = IPPROTO_UDP;
     ((struct iphdr*)ip)->check = 0;
     ((struct iphdr*)ip)->saddr = inet_addr(ADDR);
-    ((struct iphdr*)ip)->daddr = inet_addr(broadcast);
+    ((struct iphdr*)ip)->daddr = inet_addr(broadcast);*/
 
 
-    ((struct udphdr*)msg)->source = htons(SPORT);
+   /* ((struct udphdr*)msg)->source = htons(SPORT);
     ((struct udphdr*)msg)->dest = htons(DPORT);
     ((struct udphdr*)msg)->len = htons(sizeof(struct udphdr) + 20);
-    ((struct udphdr*)msg)->check = htons(0);
+    ((struct udphdr*)msg)->check = htons(0);*/
 
-    strcpy(ip + sizeof(struct iphdr), msg);
-    strcpy(ip + sizeof(struct iphdr) + sizeof(struct udphdr), "HELLO!?");
-
+   //strcpy(ip + sizeof(struct iphdr), msg);
+   //strcpy(ip + sizeof(struct iphdr) + sizeof(struct udphdr), "HELLO!?");
+    char* ip = malloc(64);
+    strcpy(ip, "Hello everyone!\n");
     printf("%s\n", ip);
 
-    int fd;
-    fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW); 
+    int fd = socket(AF_INET, SOCK_DGRAM, 0); 
 
     if (fd == -1)
     {
         perror("socket");
         exit(EXIT_FAILURE);
     }
+
     struct sockaddr_in serv;
+    memset(&serv, '\0', sizeof(struct sockaddr_in));
     serv.sin_family = AF_INET;
+    serv.sin_port = htons(DPORT);
+    serv.sin_addr.s_addr = inet_addr(broadcast);
     socklen_t addrlen = sizeof(serv);
 
-    if (sendto(fd, (void*)ip, sizeof(struct udphdr) + sizeof(struct iphdr) + 20, 0, (struct sockaddr*)&serv, addrlen)
-        == -1)
+    if (-1 == sendto(fd, ip, strlen(ip), 0, (struct sockaddr*)&serv, addrlen))
     {
-        perror("send");
+        perror("send ERR");
         exit(EXIT_FAILURE);
     }
-    close(fd);
+    //close(fd);
 
     exit(EXIT_SUCCESS);
-}}}
+}

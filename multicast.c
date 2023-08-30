@@ -7,14 +7,14 @@
 #include <sys/types.h>
 #include <linux/ip.h>
 
-#define multicast "239.0.0.10"
+#define multicast "225.0.1.1"
 #define ADDR "192.168.0.1"
 #define SPORT 7777
-#define DPORT 8888
+#define DPORT 8889
 
 int main(int argc, char** argv) {
 
-    int num = 0;
+    int ttl = 1;
     char buf[128] = "Hello clients";
 
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -24,21 +24,13 @@ int main(int argc, char** argv) {
         exit(EXIT_FAILURE);
     }
 
-    struct in_addr imr_multiaddr;
-    imr_multiaddr.s_addr = inet_addr(multicast);
-    imr_multiaddr.
-        setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF, &imr_multiaddr, sizeof(imr_multiaddr));
-
     struct sockaddr_in cliaddr;
     cliaddr.sin_family = AF_INET;
-    cliaddr.sin_port = htons(8888);
+    cliaddr.sin_port = htons(DPORT);
     cliaddr.sin_addr.s_addr = inet_addr(multicast);
 
-    for (int i = 0; i < 100; i++) {
-        sendto(fd, buf, strlen(buf) + 1, 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
-        printf("Multicast data: %s\n", buf);
-        sleep(1);
-    }
+    sendto(fd, buf, strlen(buf), 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
+    printf("Multicast data: %s\n", buf);
     close(fd);
 
     exit(EXIT_SUCCESS);

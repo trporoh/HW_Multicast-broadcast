@@ -6,16 +6,16 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define ADDR "192.168.0.3"
-#define PORT 8888
+#define ADDR "192.168.1.5"
+#define PORT 2244
+#define multicast "239.0.0.10"
 
 int main(int argc, char** argv) {
-    int size = 1;
 
     char* buffer = malloc(64);
     socklen_t addr_size;
 
-    struct sockaddr_in client, receiver;
+    struct sockaddr_in client;
 
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (-1 == fd) {
@@ -24,20 +24,26 @@ int main(int argc, char** argv) {
     }
 
     memset(&client, '\0', sizeof(struct sockaddr_in));
-    memset(&receiver, '\0', sizeof(struct sockaddr_in));
     client.sin_family = AF_INET;
     client.sin_port = htons(PORT);
-    client.sin_addr.s_addr = INADDR_ANY;
-    //setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &size, sizeof(size));
+    client.sin_addr.s_addr = inet_addr(ADDR);
 
     if (-1 == bind(fd, (struct sockaddr*)&client, sizeof(struct sockaddr_in))) {
         perror("bind ERR");
         exit(EXIT_FAILURE);
     }
 
+    struct ip_mreqn op;
+    op.imr_address.s_addr = INADDR_ANY; // local address
+    op.imr_multiaddr.s_addr = inet_addr(multicast);
+    op.imr_ifindex = 3;
+
+    setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &op, sizeof(op));
+
+
     bzero(buffer, 64);
     addr_size = sizeof(client);
-    recvfrom(fd, buffer, 64, 0, (struct sockaddr*)&receiver, &addr_size);
+    recvfrom(fd, buffer, 64, 0, (struct sockaddr*)&client, &addr_size);
     printf("[+]Data recv: %s\n", buffer);
 
     close(fd);
